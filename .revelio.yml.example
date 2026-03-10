@@ -1,0 +1,26 @@
+review:
+  # Categories of issues Revelio is allowed to comment on.
+  # Only these categories will be surfaced even if the model emits others.
+  # Allowed values: bug, security, logic, architecture
+  categories:
+    - bug
+    - security
+    - logic
+    - architecture
+
+  # Glob patterns for files to ignore completely.
+  # Examples:
+  #   - "**/*.spec.ts"       # ignore tests
+  #   - "**/dist/**"         # ignore build artifacts
+  #   - "**/generated/**"    # ignore generated code
+  ignore:
+    - "**/dist/**"
+
+  # Maximum number of diff lines to send to the LLM in a single chunk.
+  # Larger values give more context but increase token usage.
+  maxChunkLines: 400
+
+  # Minimum severity that will be surfaced in GitHub reviews.
+  # One of: low, medium, high
+  minSeverity: medium
+
