@@ -189,61 +189,84 @@ No application code changes are required.
 ```text
 revelio/
 │
-├── src/                    # All application source code
+├── src/                        # All application source code
 │  │
-│  ├── index.ts             # 🚀 Fastify server entrypoint (webhook + health)
-│  ├── worker.ts            # ⚙️ BullMQ worker entrypoint
+│  ├── index.ts                 # 🚀 Fastify server entrypoint (webhook + health)
+│  ├── worker.ts                # ⚙️ BullMQ worker entrypoint
 │  │
 │  ├── webhook/
-│  │  └── handler.ts        # Receives & validates GitHub webhook events
+│  │  ├── handler.ts            # Receives, verifies, and enqueues GitHub webhook events
+│  │  └── constants.ts          # Webhook-related constants (event names, etc.)
 │  │
 │  ├── queue/
-│  │  ├── queue.ts          # BullMQ queue definition + enqueue helper
-│  │  └── jobs.ts           # Job type definitions (ReviewJobData, etc.)
+│  │  ├── queue.ts              # BullMQ queue definitions + enqueue helpers + DLQ
+│  │  ├── jobs.ts               # Job type definitions (ReviewJobData, ReviewDeadLetterJob)
+│  │  └── constants.ts          # Queue names
 │  │
 │  ├── github/
-│  │  ├── client.ts         # Octokit wrapper (GitHub App auth)
-│  │  └── diff.ts           # Fetches raw PR diff from GitHub API
+│  │  ├── client.ts             # Octokit wrapper (GitHub App auth)
+│  │  └── diff.ts               # Fetches raw PR diff from GitHub API
 │  │
 │  ├── diff/
-│  │  └── chunker.ts        # Splits large diffs into LLM-sized chunks
+│  │  └── chunker.ts            # Splits large diffs into LLM-sized chunks
 │  │
 │  ├── llm/
-│  │  ├── types.ts          # LLMProvider interface — the core abstraction
-│  │  ├── factory.ts        # createProvider() — reads env, returns provider
+│  │  ├── types.ts              # LLMProvider interface — the core abstraction
+│  │  ├── factory.ts            # createProvider() — reads env, returns provider
 │  │  └── providers/
-│  │     ├── claude.ts      # Anthropic Claude implementation
-│  │     ├── openai.ts      # OpenAI GPT implementation
-│  │     └── gemini.ts      # Google Gemini implementation
+│  │     ├── claude.ts          # Anthropic Claude implementation
+│  │     ├── openai.ts          # OpenAI GPT implementation
+│  │     └── gemini.ts          # Google Gemini implementation
 │  │
 │  ├── review/
-│  │  ├── prompt.ts         # Builds system + user prompts
-│  │  ├── parser.ts         # Parses LLM JSON → ReviewComment[]
-│  │  └── poster.ts         # Posts review comments back to GitHub
+│  │  ├── constants.ts          # System prompt and related constants
+│  │  ├── prompt.ts             # Builds system + user prompts
+│  │  ├── parser.ts             # Parses LLM JSON → ReviewComment[]
+│  │  └── poster.ts             # Posts review comments back to GitHub
 │  │
-│  └── config/
-│     ├── schema.ts         # Zod schema for .revelio.yml
-│     └── loader.ts         # Loads + validates per-repo config
+│  ├── config/
+│  │  ├── schema.ts             # Zod schema for .revelio.yml
+│  │  └── loader.ts             # Loads + validates per-repo config from GitHub
+│  │
+│  └── worker/
+│     └── filters.ts            # Helpers for applying config (ignore globs) to diff chunks
 │
-├── infra/                  # AWS CDK (TypeScript) — mirrors local arch
-│  ├── bin/
-│  │  └── app.ts            # CDK app entrypoint
-│  └── lib/
-│     └── revelio-stack.ts  # API Gateway + SQS + Lambda/ECS + SSM
+├── infra/                      # AWS CDK (TypeScript) — mirrors local arch
+│  ├── src/
+│  │  ├── app.ts                # CDK app entrypoint
+│  │  └── revelio-stack.ts      # API Gateway + SQS + Lambda/ECS + SSM
+│  ├── package.json             # Infra-specific dependencies (aws-cdk-lib, constructs, etc.)
+│  ├── tsconfig.json            # TS config for the CDK app
+│  └── cdk.json                 # CDK CLI configuration (app entrypoint)
 │
-├── tests/
+├── tests/                      # Jest test suites
+│  ├── config/
+│  │  └── loader.test.js        # Config loader tests
 │  ├── diff/
-│  │  └── chunker.test.ts
+│  │  └── chunker.test.js       # Diff chunker tests
+│  ├── github/
+│  │  └── diff.test.js          # GitHub diff helper tests
 │  ├── llm/
-│  │  └── factory.test.ts
-│  └── review/
-│     └── parser.test.ts
+│  │  └── factory.test.js       # LLM factory tests
+│  ├── queue/
+│  │  └── dlq.test.js           # Dead-letter queue helper tests
+│  ├── review/
+│  │  ├── parser.test.js        # Review parser tests
+│  │  └── poster.test.js        # Review poster tests
+│  ├── webhook/
+│  │  └── handler.test.js       # Webhook handler + enqueue + signature tests
+│  └── worker/
+│     └── filters.test.js       # Worker filter helper tests
 │
 ├── docker/
-│  └── docker-compose.yml   # Redis + server + worker for local dev
+│  └── docker-compose.yml       # Redis + server + worker for local dev
 │
-├── .revelio.yml.example    # Per-repo config template (sample)
-├── .env.example            # Env variables template (sample)
+├── Dockerfile                  # App image used by docker-compose
+├── .revelio.yml.example        # Per-repo config template (sample)
+├── .env.example                # Env variables template (sample)
+├── jest.config.cjs             # Jest configuration
+├── CONTRIBUTING.md             # Contribution guidelines
+├── data-flow.md                # Local data-flow diagram
 ├── package.json
 ├── tsconfig.json
 └── README.md
