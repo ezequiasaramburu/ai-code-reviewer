@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
 import { Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
-import { minimatch } from 'minimatch';
 import { ReviewJobData } from './queue/jobs';
 import { REVIEW_QUEUE_NAME } from './queue/constants';
 import { GitHubClient } from './github/client';
@@ -13,6 +12,7 @@ import { buildUserPrompt } from './review/prompt';
 import { parseReviewResponse } from './review/parser';
 import { postReview } from './review/poster';
 import { loadConfig } from './config/loader';
+import { filterChunksByConfig } from './worker/filters';
 
 dotenv.config();
 
@@ -45,9 +45,7 @@ async function handleReviewJob(job: Job<ReviewJobData>): Promise<void> {
     return;
   }
 
-  const chunks = chunkDiff(raw, review.maxChunkLines).filter(chunk => {
-    return !review.ignore.some(pattern => minimatch(chunk.filename, pattern));
-  });
+  const chunks = filterChunksByConfig(chunkDiff(raw, review.maxChunkLines), review);
   if (!chunks.length) {
     await postReview({
       client: octokit,
