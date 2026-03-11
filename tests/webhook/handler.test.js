@@ -59,6 +59,7 @@ describe('webhookHandler', () => {
     const request = makeRequest({
       headers: { 'x-github-event': GITHUB_EVENT_PULL_REQUEST },
       body: {
+        action: 'opened',
         repository: { owner: { login: 'owner' }, name: 'repo' },
         // missing pull_request or installation
       },
@@ -76,6 +77,7 @@ describe('webhookHandler', () => {
     const request = makeRequest({
       headers: { 'x-github-event': GITHUB_EVENT_PULL_REQUEST },
       body: {
+        action: 'opened',
         installation: { id: 123 },
         repository: { owner: { login: 'owner' }, name: 'repo' },
         pull_request: {
@@ -109,6 +111,7 @@ describe('webhookHandler', () => {
         'x-hub-signature-256': 'sha256=invalid',
       },
       body: {
+        action: 'opened',
         installation: { id: 123 },
         repository: { owner: { login: 'owner' }, name: 'repo' },
         pull_request: {
@@ -131,6 +134,7 @@ describe('webhookHandler', () => {
     process.env.GITHUB_WEBHOOK_SECRET = secret;
 
     const body = {
+      action: 'opened',
       installation: { id: 123 },
       repository: { owner: { login: 'owner' }, name: 'repo' },
       pull_request: {
@@ -154,6 +158,27 @@ describe('webhookHandler', () => {
 
     expect(reply.statusCode).toBe(202);
     expect(enqueueReview).toHaveBeenCalledTimes(1);
+  });
+
+  test('ignores pull_request events with non-target actions', async () => {
+    const request = makeRequest({
+      headers: { 'x-github-event': GITHUB_EVENT_PULL_REQUEST },
+      body: {
+        action: 'closed',
+        installation: { id: 123 },
+        repository: { owner: { login: 'owner' }, name: 'repo' },
+        pull_request: {
+          number: 1,
+          head: { sha: 'sha' },
+        },
+      },
+    });
+    const reply = makeReply();
+
+    await webhookHandler(request, reply);
+
+    expect(reply.statusCode).toBe(204);
+    expect(enqueueReview).not.toHaveBeenCalled();
   });
 });
 

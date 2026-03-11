@@ -50,6 +50,15 @@ export async function webhookHandler(
   }
 
   const body = request.body as any;
+  const action = body.action;
+
+  // We only care about PRs that are opened, synchronized (new commits), or reopened.
+  if (action !== 'opened' && action !== 'synchronize' && action !== 'reopened') {
+    request.log.info({ event, delivery, action }, 'Ignoring pull_request action');
+    reply.code(204).send();
+    return;
+  }
+
   const pr = body.pull_request;
   const installationId = body.installation?.id;
 

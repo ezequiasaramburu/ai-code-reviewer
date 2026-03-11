@@ -6,7 +6,13 @@ import { REVIEW_QUEUE_NAME, REVIEW_DLQ_NAME } from './constants';
 function createRedisConnection() {
   const host = process.env.REDIS_HOST ?? 'localhost';
   const port = Number(process.env.REDIS_PORT) || 6379;
-  return new IORedis({ host, port });
+  return new IORedis({
+    host,
+    port,
+    // Required by BullMQ with ioredis v5 to avoid blocking behavior.
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+  });
 }
 
 export function createReviewQueue(): Queue<ReviewJobData> {

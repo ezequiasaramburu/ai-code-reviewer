@@ -11,11 +11,14 @@ export class GitHubClient {
 
   constructor(config?: Partial<GitHubClientConfig>) {
     const appId = config?.appId ?? Number(process.env.GITHUB_APP_ID);
-    const privateKey = config?.privateKey ?? process.env.GITHUB_APP_PRIVATE_KEY;
+    const rawPrivateKey = config?.privateKey ?? process.env.GITHUB_APP_PRIVATE_KEY;
 
-    if (!appId || !privateKey) {
+    if (!appId || !rawPrivateKey) {
       throw new Error('Missing GitHub App configuration (GITHUB_APP_ID / GITHUB_APP_PRIVATE_KEY)');
     }
+
+    // Support both literal PEM with newlines and env-friendly `\n`-escaped keys.
+    const privateKey = rawPrivateKey.replace(/\\n/g, '\n');
 
     this.appOctokit = new Octokit({
       authStrategy: createAppAuth,
