@@ -20,7 +20,7 @@ It behaves like a pragmatic senior engineer: **no nitpicks, no style wars, only 
 
 Revelio does **not** poll GitHub. Once you install the Revelio **GitHub App** on a repo and subscribe it to **Pull request** events, **GitHub pushes** to your server:
 
-- When someone **opens** a PR, **pushes** new commits, or **re-syncs** the branch, GitHub sends an HTTP `POST` to your webhook URL with a signed payload. Locally that might be `http://localhost:3000/webhook` (or a tunnel like `https://<your-ngrok-id>.ngrok.io/webhook` so GitHub can reach your machine).
+- When someone **opens** a PR, **pushes** new commits, or **re-syncs** the branch, GitHub sends an HTTP `POST` to your webhook URL with a signed payload. In local development this must be a **public tunnel URL** (e.g. `https://<your-ngrok-id>.ngrok.io/webhook`), not `http://localhost:3000/webhook`, because GitHub cannot reach localhost directly.
 - Revelio’s server receives it at `POST /webhook`, verifies the signature with `GITHUB_WEBHOOK_SECRET`, and—if the event is `pull_request`—enqueues a **review job** and responds `202` so GitHub doesn’t retry.
 
 So: **the trigger is automatic for any repo where the App is installed**; no `.revelio.yml` is required for the webhook to fire. The config file is used later by the worker (see below).
